@@ -1,6 +1,6 @@
 export { adhocProcessOfOrderIdsViaCli, timeout } from './adhocService';
 export { getNumberOfSubscriptions } from './rechargeProxyScripts';
-export { retrieveProductInfo } from './skuOldToNew';
+export { SkuOldToNew } from './skuOldToNew';
 export { rawQuery as rawSnowflakeQuery } from './query';
 export { generateContent } from './build';
 export * from './engineeringEvents';

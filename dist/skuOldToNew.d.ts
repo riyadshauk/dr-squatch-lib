@@ -1,2 +1,14 @@
 import { Product } from './bundlesFromShopifyToSku';
-export declare const retrieveProductInfo: (sku: string, store?: 'US' | 'EU') => Product;
+export declare class SkuOldToNew {
+    #private;
+    constructor({ productList, stateToDC, }: {
+        productList: Product[];
+        stateToDC: {
+            [stateCode: string]: string;
+        };
+    });
+    retrieveProductInfo: (sku: string, store?: 'US' | 'EU') => Product;
+    retrieveStateToDC: () => {
+        [stateCode: string]: string;
+    };
+}
