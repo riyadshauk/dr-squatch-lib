@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sqs = exports.PutItemCommand = exports.GetItemCommand = exports.DeleteItemCommand = exports.dynamodb = void 0;
+var dynamodb_1 = require("./dynamodb");
+Object.defineProperty(exports, "dynamodb", { enumerable: true, get: function () { return dynamodb_1.dynamodb; } });
+Object.defineProperty(exports, "DeleteItemCommand", { enumerable: true, get: function () { return dynamodb_1.DeleteItemCommand; } });
+Object.defineProperty(exports, "GetItemCommand", { enumerable: true, get: function () { return dynamodb_1.GetItemCommand; } });
+Object.defineProperty(exports, "PutItemCommand", { enumerable: true, get: function () { return dynamodb_1.PutItemCommand; } });
+var sqs_1 = require("./sqs");
+Object.defineProperty(exports, "sqs", { enumerable: true, get: function () { return sqs_1.sqs; } });

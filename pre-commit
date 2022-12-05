@@ -1,0 +1,5 @@
+#!/bin/bash
+# place this file in .git/hooks for easily committing updates to library for immediate consumability
+rm -rf dist
+npx tsc
+git add dist # for direct download via `npn i github:dr-squatch/lib`

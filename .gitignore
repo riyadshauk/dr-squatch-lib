@@ -1,0 +1,9 @@
+/**/.env*
+.env*
+node_modules
+serverless.*
+.DS_STORE
+# dist
+src/productListRaw.json
+content
+content-test
