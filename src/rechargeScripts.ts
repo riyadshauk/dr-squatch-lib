@@ -213,3 +213,80 @@ export const updateSubscription = async (opts: {
   properties?: Property[],
   sku?: string,
 }): Promise<void> => exponentialBackoff(updateSubscriptionInternal, [opts], { funcName: 'updateSubscriptionInternal' });
+
+const getChargesInternal = async (queryParams: { [paramName: string]: string }) => {
+  const { data, status } = await axios({
+    method: 'get',
+    url: `${RECHARGE_API_BASE_URL}/charges${Object.entries(queryParams).reduce((acc, [k, v]) => acc ? `${acc}&${k}=${v}` : `?${k}=${v}`, '')}`,
+    headers: {
+      'X-Recharge-Version': '2021-11',
+      'X-Recharge-Access-Token': keyRotater(rechargeApiKeys),
+    },
+  }) as { data: { customer: RechargeCustomer }, status: number };
+  if (status === 429) {
+    throw new Error('getShopifyCustomerId, response status === 429 (rate limited)');
+  }
+  // @ts-ignore
+  return data.charges;
+};
+
+/**
+ * @description queryParams can be, eg, external_order_id = (shopify order ID),
+ * email = (email from shopify order, etc)
+ * @deprecated This only pulls the first page of charges...
+ * Needs to be refactored to loop through all pages via cursor/etc...
+ * However, many common cases just require getting the most recent charges,
+ * so this seems to work for that... Also, if you specify a specific query,
+ * that will filter down the charges to paginate through; likely not many.
+ */
+export const getCharges = async (queryParams: { [paramName: string]: string }) => exponentialBackoff(getChargesInternal, [queryParams], { funcName: 'getChargesInternal' });
+
+const refundRechargeLineItemInternal = async (
+  {
+    chargeId, amount, fullRefund = false, retry = false,
+  }:
+    {
+      chargeId: number,
+      amount: string,
+      fullRefund?: boolean,
+      retry?: boolean
+    },
+) => {
+  const { data, status } = await axios({
+    method: 'post',
+    url: `${RECHARGE_API_BASE_URL}/charges/${chargeId}/refund`,
+    headers: {
+      'X-Recharge-Version': '2021-11',
+      'X-Recharge-Access-Token': keyRotater(rechargeApiKeys),
+    },
+    data: {
+      amount,
+      full_refund: fullRefund,
+      retry,
+    },
+  }) as { data: { customer: RechargeCustomer }, status: number };
+  if (status === 429) {
+    throw new Error('getShopifyCustomerId, response status === 429 (rate limited)');
+  }
+  if (status !== 200) {
+    throw new Error(`problem creating partial refund for line-item:${JSON.stringify({
+      chargeId, amount, fullRefund, retry,
+    })}`);
+  }
+  return data;
+};
+
+/**
+ * @description queryParams can be, eg, external_order_id = (shopify order ID),
+ * email = (email from shopify order, etc)
+ */
+export const refundRechargeLineItem = async ({
+  chargeId, amount, fullRefund = false, retry = false,
+}: {
+  chargeId: number,
+  amount: string,
+  fullRefund?: boolean,
+  retry?: boolean
+}) => exponentialBackoff(refundRechargeLineItemInternal, [{
+  chargeId, amount, fullRefund, retry,
+}], { funcName: 'refundRechargeLineItemInternal' });

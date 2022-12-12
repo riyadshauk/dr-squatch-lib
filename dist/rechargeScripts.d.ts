@@ -40,3 +40,25 @@ export declare const updateSubscription: (opts: {
     properties?: Property[];
     sku?: string;
 }) => Promise<void>;
+/**
+ * @description queryParams can be, eg, external_order_id = (shopify order ID),
+ * email = (email from shopify order, etc)
+ * @deprecated This only pulls the first page of charges...
+ * Needs to be refactored to loop through all pages via cursor/etc...
+ * However, many common cases just require getting the most recent charges,
+ * so this seems to work for that... Also, if you specify a specific query,
+ * that will filter down the charges to paginate through; likely not many.
+ */
+export declare const getCharges: (queryParams: {
+    [paramName: string]: string;
+}) => Promise<any>;
+/**
+ * @description queryParams can be, eg, external_order_id = (shopify order ID),
+ * email = (email from shopify order, etc)
+ */
+export declare const refundRechargeLineItem: ({ chargeId, amount, fullRefund, retry, }: {
+    chargeId: number;
+    amount: string;
+    fullRefund?: boolean | undefined;
+    retry?: boolean | undefined;
+}) => Promise<any>;

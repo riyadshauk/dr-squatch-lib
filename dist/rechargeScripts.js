@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateSubscription = exports.refundRechargeCharge = exports.getSubscriptions = exports.deleteSubscription = exports.getShopifyCustomerId = exports.removeRechargeOneTime = exports.addRechargeOneTime = void 0;
+exports.refundRechargeLineItem = exports.getCharges = exports.updateSubscription = exports.refundRechargeCharge = exports.getSubscriptions = exports.deleteSubscription = exports.getShopifyCustomerId = exports.removeRechargeOneTime = exports.addRechargeOneTime = void 0;
 const axios_1 = __importDefault(require("axios"));
 const utils_1 = require("./utils");
 const { RECHARGE_API_KEYS, RECHARGE_API_BASE_URL, } = process.env;
@@ -161,3 +161,63 @@ const updateSubscriptionInternal = ({ subscriptionId, properties, sku, }) => __a
  */
 const updateSubscription = (opts) => __awaiter(void 0, void 0, void 0, function* () { return (0, utils_1.exponentialBackoff)(updateSubscriptionInternal, [opts], { funcName: 'updateSubscriptionInternal' }); });
 exports.updateSubscription = updateSubscription;
+const getChargesInternal = (queryParams) => __awaiter(void 0, void 0, void 0, function* () {
+    const { data, status } = yield (0, axios_1.default)({
+        method: 'get',
+        url: `${RECHARGE_API_BASE_URL}/charges${Object.entries(queryParams).reduce((acc, [k, v]) => acc ? `${acc}&${k}=${v}` : `?${k}=${v}`, '')}`,
+        headers: {
+            'X-Recharge-Version': '2021-11',
+            'X-Recharge-Access-Token': (0, utils_1.keyRotater)(rechargeApiKeys),
+        },
+    });
+    if (status === 429) {
+        throw new Error('getShopifyCustomerId, response status === 429 (rate limited)');
+    }
+    // @ts-ignore
+    return data.charges;
+});
+/**
+ * @description queryParams can be, eg, external_order_id = (shopify order ID),
+ * email = (email from shopify order, etc)
+ * @deprecated This only pulls the first page of charges...
+ * Needs to be refactored to loop through all pages via cursor/etc...
+ * However, many common cases just require getting the most recent charges,
+ * so this seems to work for that... Also, if you specify a specific query,
+ * that will filter down the charges to paginate through; likely not many.
+ */
+const getCharges = (queryParams) => __awaiter(void 0, void 0, void 0, function* () { return (0, utils_1.exponentialBackoff)(getChargesInternal, [queryParams], { funcName: 'getChargesInternal' }); });
+exports.getCharges = getCharges;
+const refundRechargeLineItemInternal = ({ chargeId, amount, fullRefund = false, retry = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+    const { data, status } = yield (0, axios_1.default)({
+        method: 'post',
+        url: `${RECHARGE_API_BASE_URL}/charges/${chargeId}/refund`,
+        headers: {
+            'X-Recharge-Version': '2021-11',
+            'X-Recharge-Access-Token': (0, utils_1.keyRotater)(rechargeApiKeys),
+        },
+        data: {
+            amount,
+            full_refund: fullRefund,
+            retry,
+        },
+    });
+    if (status === 429) {
+        throw new Error('getShopifyCustomerId, response status === 429 (rate limited)');
+    }
+    if (status !== 200) {
+        throw new Error(`problem creating partial refund for line-item:${JSON.stringify({
+            chargeId, amount, fullRefund, retry,
+        })}`);
+    }
+    return data;
+});
+/**
+ * @description queryParams can be, eg, external_order_id = (shopify order ID),
+ * email = (email from shopify order, etc)
+ */
+const refundRechargeLineItem = ({ chargeId, amount, fullRefund = false, retry = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+    return (0, utils_1.exponentialBackoff)(refundRechargeLineItemInternal, [{
+            chargeId, amount, fullRefund, retry,
+        }], { funcName: 'refundRechargeLineItemInternal' });
+});
+exports.refundRechargeLineItem = refundRechargeLineItem;

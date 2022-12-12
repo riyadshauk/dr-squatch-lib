@@ -355,6 +355,101 @@ export const closeOrder = async (
   },
 );
 
+/**
+ * @description This is useful for when we want to remove+refund line-item
+ * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ */
+export const removeLineItemFromShopifyOrderWithRefund = async ({
+  orderGid,
+  lineItemGid,
+  quantity,
+  amountToRefund,
+  gateway,
+  kind = 'REFUND',
+  notify = false,
+}: {
+  orderGid: string,
+  lineItemGid: string,
+  quantity: number,
+  amountToRefund?: number,
+  gateway?: string,
+  kind?: string,
+  notify?: boolean,
+}): Promise<{
+  error?: string,
+  data?: any,
+}> => shopifyGraphqlRequest<any>(
+  {
+    query: `mutation refundCreate($input: RefundInput!) {
+      refundCreate(input: $input) {
+        order {
+          # Order fields
+          id
+        }
+        refund {
+          # Refund fields
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    variables: {
+      input: {
+        note: 'Removing line-item',
+        notify,
+        orderId: orderGid,
+        refundDuties: [
+
+        ],
+        refundLineItems: [
+          {
+            lineItemId: lineItemGid,
+            // "locationId": "",
+            quantity,
+            // "restockType": ""
+          },
+        ],
+        transactions: amountToRefund ? [{
+          amount: amountToRefund, // $ amount, including applicable tax associated with item
+          gateway,
+          kind,
+          orderId: orderGid,
+        }] : [],
+      },
+    },
+  },
+  {
+    // eslint-disable-next-line max-len
+    errorReporter: data => (data.data.refundCreate.userErrors.length > 0 ? { error: JSON.stringify(data.data.refundCreate.userErrors) } : undefined),
+    // @ts-ignore
+    transform: data => data.data?.refundCreate,
+  },
+);
+
+/**
+ * @description This is useful for when we want to remove+refund line-item
+ * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ */
+export const removeLineItemFromShopifyOrderWithoutRefunding = async ({
+  orderGid,
+  lineItemGid,
+  quantity,
+  notify = false,
+}: {
+  orderGid: string,
+  lineItemGid: string,
+  quantity: number,
+  notify?: boolean,
+}): Promise<{
+  error?: string,
+  data?: any,
+}> => removeLineItemFromShopifyOrderWithRefund({
+  orderGid, lineItemGid, quantity, notify,
+});
+
 // export const addTagsInShopify = async (gid: string, tags: string[]) => backOff(
 //   // eslint-disable-next-line no-return-await
 //   async () => await addTagWithoutRetry(gid, tags),

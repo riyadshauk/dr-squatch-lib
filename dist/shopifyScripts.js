@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
+exports.removeLineItemFromShopifyOrderWithoutRefunding = exports.removeLineItemFromShopifyOrderWithRefund = exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
 /* eslint-disable import/no-extraneous-dependencies */
 const axios_1 = __importDefault(require("axios"));
 const axios_retry_1 = __importDefault(require("axios-retry"));
@@ -290,3 +290,65 @@ const closeOrder = (gid) => __awaiter(void 0, void 0, void 0, function* () {
     });
 });
 exports.closeOrder = closeOrder;
+/**
+ * @description This is useful for when we want to remove+refund line-item
+ * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ */
+const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, lineItemGid, quantity, amountToRefund, gateway, kind = 'REFUND', notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+    return shopifyGraphqlRequest({
+        query: `mutation refundCreate($input: RefundInput!) {
+      refundCreate(input: $input) {
+        order {
+          # Order fields
+          id
+        }
+        refund {
+          # Refund fields
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+        variables: {
+            input: {
+                note: 'Removing line-item',
+                notify,
+                orderId: orderGid,
+                refundDuties: [],
+                refundLineItems: [
+                    {
+                        lineItemId: lineItemGid,
+                        // "locationId": "",
+                        quantity,
+                        // "restockType": ""
+                    },
+                ],
+                transactions: amountToRefund ? [{
+                        amount: amountToRefund,
+                        gateway,
+                        kind,
+                        orderId: orderGid,
+                    }] : [],
+            },
+        },
+    }, {
+        // eslint-disable-next-line max-len
+        errorReporter: data => (data.data.refundCreate.userErrors.length > 0 ? { error: JSON.stringify(data.data.refundCreate.userErrors) } : undefined),
+        // @ts-ignore
+        transform: data => { var _a; return (_a = data.data) === null || _a === void 0 ? void 0 : _a.refundCreate; },
+    });
+});
+exports.removeLineItemFromShopifyOrderWithRefund = removeLineItemFromShopifyOrderWithRefund;
+/**
+ * @description This is useful for when we want to remove+refund line-item
+ * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ */
+const removeLineItemFromShopifyOrderWithoutRefunding = ({ orderGid, lineItemGid, quantity, notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+    return (0, exports.removeLineItemFromShopifyOrderWithRefund)({
+        orderGid, lineItemGid, quantity, notify,
+    });
+});
+exports.removeLineItemFromShopifyOrderWithoutRefunding = removeLineItemFromShopifyOrderWithoutRefunding;
