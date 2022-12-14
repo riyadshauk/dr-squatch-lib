@@ -357,7 +357,6 @@ exports.removeLineItemFromShopifyOrderWithoutRefunding = removeLineItemFromShopi
 const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(void 0, void 0, void 0, function* () {
     return shopifyGraphqlRequest({
         query: `{
-      # The ID of the order.
       order(id: "gid://shopify/Order/${orderId}") {
         # The total amount of duties after returns, in shop and presentment currencies. Returns 'null' if duties aren't applicable.
         # currentTotalDutiesSet {

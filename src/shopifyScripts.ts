@@ -449,114 +449,11 @@ export const removeLineItemFromShopifyOrderWithoutRefunding = async ({
 });
 
 // @ts-ignore
-export const queryOrderDataWithPaymentAndFulfillmentStatus: Promise<{
-  displayFulfillmentStatus: string
-  displayFinancialStatus: string
-  tags: Array<string>
-  id: string
-  originalTotalDutiesSet: any
-  totalReceivedSet: {
-    presentmentMoney: {
-      amount: string
-      currencyCode: string
-    }
-    shopMoney: {
-      amount: string
-      currencyCode: string
-    }
-  }
-  totalShippingPriceSet: {
-    presentmentMoney: {
-      amount: string
-      currencyCode: string
-    }
-    shopMoney: {
-      amount: string
-      currencyCode: string
-    }
-  }
-  totalRefundedSet: {
-    presentmentMoney: {
-      amount: string
-      currencyCode: string
-    }
-    shopMoney: {
-      amount: string
-      currencyCode: string
-    }
-  }
-  transactions: Array<{
-    id: string
-    gateway: string
-    formattedGateway: string
-    parentTransaction: any
-    amountSet: {
-      presentmentMoney: {
-        amount: string
-        currencyCode: string
-      }
-      shopMoney: {
-        amount: string
-        currencyCode: string
-      }
-    }
-    fees: Array<{
-      amount: {
-        amount: string
-        currencyCode: string
-      }
-      flatFee: {
-        amount: string
-        currencyCode: string
-      }
-      flatFeeName: any
-      id: string
-      rate: string
-      rateName: string
-      taxAmount: {
-        amount: string
-        currencyCode: string
-      }
-      type: string
-    }>
-  }>
-  lineItems: {
-    edges: Array<{
-      node: {
-        id: string
-        sku: string
-        title: string
-        refundableQuantity: number
-        originalUnitPriceSet: {
-          presentmentMoney: {
-            amount: string
-            currencyCode: string
-          }
-          shopMoney: {
-            amount: string
-            currencyCode: string
-          }
-        }
-        discountedUnitPriceSet: {
-          presentmentMoney: {
-            amount: string
-            currencyCode: string
-          }
-          shopMoney: {
-            amount: string
-            currencyCode: string
-          }
-        }
-        duties: Array<any>
-      }
-    }>
-  }
-}> = async (
+export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
   orderId: number,
-) => shopifyGraphqlRequest<any>(
+) => shopifyGraphqlRequest<OrderDataWithPaymentAndFulfillmentStatus>(
   {
     query: `{
-      # The ID of the order.
       order(id: "gid://shopify/Order/${orderId}") {
         # The total amount of duties after returns, in shop and presentment currencies. Returns 'null' if duties aren't applicable.
         # currentTotalDutiesSet {
@@ -771,6 +668,110 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus: Promise<{
 //     },
 //   },
 // );
+
+export interface OrderDataWithPaymentAndFulfillmentStatus {
+  displayFulfillmentStatus: string
+  displayFinancialStatus: string
+  tags: Array<string>
+  id: string
+  originalTotalDutiesSet: any
+  totalReceivedSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
+  totalShippingPriceSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
+  totalRefundedSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
+  transactions: Array<{
+    id: string
+    gateway: string
+    formattedGateway: string
+    parentTransaction: any
+    amountSet: {
+      presentmentMoney: {
+        amount: string
+        currencyCode: string
+      }
+      shopMoney: {
+        amount: string
+        currencyCode: string
+      }
+    }
+    fees: Array<{
+      amount: {
+        amount: string
+        currencyCode: string
+      }
+      flatFee: {
+        amount: string
+        currencyCode: string
+      }
+      flatFeeName: any
+      id: string
+      rate: string
+      rateName: string
+      taxAmount: {
+        amount: string
+        currencyCode: string
+      }
+      type: string
+    }>
+  }>
+  lineItems: {
+    edges: Array<{
+      node: {
+        id: string
+        sku: string
+        title: string
+        refundableQuantity: number
+        originalUnitPriceSet: {
+          presentmentMoney: {
+            amount: string
+            currencyCode: string
+          }
+          shopMoney: {
+            amount: string
+            currencyCode: string
+          }
+        }
+        discountedUnitPriceSet: {
+          presentmentMoney: {
+            amount: string
+            currencyCode: string
+          }
+          shopMoney: {
+            amount: string
+            currencyCode: string
+          }
+        }
+        duties: Array<any>
+      }
+    }>
+  }
+}
 
 export interface ShopifyFulfillmentAndTags {
   id: string;
