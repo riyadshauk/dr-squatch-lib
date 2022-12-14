@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.removeLineItemFromShopifyOrderWithoutRefunding = exports.removeLineItemFromShopifyOrderWithRefund = exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
+exports.queryOrderDataWithPaymentAndFulfillmentStatus = exports.removeLineItemFromShopifyOrderWithoutRefunding = exports.removeLineItemFromShopifyOrderWithRefund = exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
 /* eslint-disable import/no-extraneous-dependencies */
 const axios_1 = __importDefault(require("axios"));
 const axios_retry_1 = __importDefault(require("axios-retry"));
@@ -293,8 +293,16 @@ exports.closeOrder = closeOrder;
 /**
  * @description This is useful for when we want to remove+refund line-item
  * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ *
+ * If no amountsToRefund specified, this will only remove the item from the
+ * order (and not actually refund anything)!
+ *
+ * Currency must be the presentment_currency in orders where there
+ * is a presentment_currency and a shop_currency; 3-letters, all-caps.
+ *
+ * Any ids, such as lineItemId, should be GID values.
  */
-const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, lineItemGid, quantity, amountToRefund, gateway, kind = 'REFUND', notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, refundLineItems, gateway, amountsToRefund, currency = 'USD', kind = 'REFUND', notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
     return shopifyGraphqlRequest({
         query: `mutation refundCreate($input: RefundInput!) {
       refundCreate(input: $input) {
@@ -317,21 +325,14 @@ const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, lineItemGid, quant
                 note: 'Removing line-item',
                 notify,
                 orderId: orderGid,
-                refundDuties: [],
-                refundLineItems: [
-                    {
-                        lineItemId: lineItemGid,
-                        // "locationId": "",
-                        quantity,
-                        // "restockType": ""
-                    },
-                ],
-                transactions: amountToRefund ? [{
-                        amount: amountToRefund,
-                        gateway,
-                        kind,
-                        orderId: orderGid,
-                    }] : [],
+                currency,
+                refundLineItems,
+                transactions: Array.isArray(amountsToRefund) ? amountsToRefund.map(amount => ({
+                    amount,
+                    gateway,
+                    kind,
+                    orderId: orderGid,
+                })) : [],
             },
         },
     }, {
@@ -346,9 +347,218 @@ exports.removeLineItemFromShopifyOrderWithRefund = removeLineItemFromShopifyOrde
  * @description This is useful for when we want to remove+refund line-item
  * for a Recharge order. Such orders cannot be refunded directly in Shopify.
  */
-const removeLineItemFromShopifyOrderWithoutRefunding = ({ orderGid, lineItemGid, quantity, notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+const removeLineItemFromShopifyOrderWithoutRefunding = ({ orderGid, refundLineItems, notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
     return (0, exports.removeLineItemFromShopifyOrderWithRefund)({
-        orderGid, lineItemGid, quantity, notify,
+        orderGid, refundLineItems, notify, amountsToRefund: [],
     });
 });
 exports.removeLineItemFromShopifyOrderWithoutRefunding = removeLineItemFromShopifyOrderWithoutRefunding;
+/**
+ * @description This is useful for when we want to remove+refund line-item
+ * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ */
+const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(void 0, void 0, void 0, function* () {
+    return shopifyGraphqlRequest({
+        query: `{
+      # The ID of the order.
+      order(id: "gid://shopify/Order/${orderId}") {
+        # The total amount of duties after returns, in shop and presentment currencies. Returns 'null' if duties aren't applicable.
+        # currentTotalDutiesSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        displayFulfillmentStatus
+        displayFinancialStatus
+        tags
+        id
+        # currentTotalDutiesSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #   shopMoney {
+        #     amount
+        #     currencyCode
+        #   }
+        # }
+        # discountApplications {
+        #     pageInfo {
+        #         startCursor
+        #         endCursor
+        #     }
+        #     a
+        # }
+        # subtotalPriceSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        # originalTotalPriceSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        originalTotalDutiesSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        # totalDiscountsSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        totalReceivedSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        totalShippingPriceSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        # totalTaxSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        totalRefundedSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        transactions (first: 10) {
+            id
+            gateway
+            formattedGateway
+            parentTransaction {
+                id
+            }
+            amountSet {
+                presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+            }
+            fees {
+                amount {
+                    amount
+                    currencyCode
+                }
+                flatFee {
+                    amount
+                    currencyCode
+                }
+                flatFeeName
+                id
+                rate
+                rateName
+                taxAmount {
+                    amount
+                    currencyCode
+                }
+                type
+            }
+        }
+        lineItems(first: 10) {
+          edges {
+            node {
+              id
+              sku
+              title
+              refundableQuantity
+              originalUnitPriceSet {
+                  presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+              }
+              discountedUnitPriceSet {
+                  presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+              }
+              # The duties associated with the line item.
+              duties {
+                id
+                harmonizedSystemCode
+                price {
+                  shopMoney {
+                    amount
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }`,
+        variables: {},
+    }, {
+        // eslint-disable-next-line max-len
+        errorReporter: data => (data.data.order.userErrors.length > 0 ? { error: JSON.stringify(data.data.order.userErrors) } : undefined),
+        // @ts-ignore
+        transform: data => { var _a; return (_a = data.data) === null || _a === void 0 ? void 0 : _a.order; },
+    });
+});
+exports.queryOrderDataWithPaymentAndFulfillmentStatus = queryOrderDataWithPaymentAndFulfillmentStatus;

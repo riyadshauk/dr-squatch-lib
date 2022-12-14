@@ -358,20 +358,28 @@ export const closeOrder = async (
 /**
  * @description This is useful for when we want to remove+refund line-item
  * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ *
+ * If no amountsToRefund specified, this will only remove the item from the
+ * order (and not actually refund anything)!
+ *
+ * Currency must be the presentment_currency in orders where there
+ * is a presentment_currency and a shop_currency; 3-letters, all-caps.
+ *
+ * Any ids, such as lineItemId, should be GID values.
  */
 export const removeLineItemFromShopifyOrderWithRefund = async ({
   orderGid,
-  lineItemGid,
-  quantity,
-  amountToRefund,
+  refundLineItems,
   gateway,
+  amountsToRefund,
+  currency = 'USD',
   kind = 'REFUND',
   notify = false,
 }: {
   orderGid: string,
-  lineItemGid: string,
-  quantity: number,
-  amountToRefund?: number,
+  refundLineItems: { lineItemId: string, quantity: number }[],
+  amountsToRefund: number[],
+  currency?: string,
   gateway?: string,
   kind?: string,
   notify?: boolean,
@@ -401,23 +409,14 @@ export const removeLineItemFromShopifyOrderWithRefund = async ({
         note: 'Removing line-item',
         notify,
         orderId: orderGid,
-        refundDuties: [
-
-        ],
-        refundLineItems: [
-          {
-            lineItemId: lineItemGid,
-            // "locationId": "",
-            quantity,
-            // "restockType": ""
-          },
-        ],
-        transactions: amountToRefund ? [{
-          amount: amountToRefund, // $ amount, including applicable tax associated with item
+        currency,
+        refundLineItems,
+        transactions: Array.isArray(amountsToRefund) ? amountsToRefund.map(amount => ({
+          amount, // $ amount, including applicable tax associated with item
           gateway,
           kind,
           orderId: orderGid,
-        }] : [],
+        })) : [],
       },
     },
   },
@@ -435,20 +434,349 @@ export const removeLineItemFromShopifyOrderWithRefund = async ({
  */
 export const removeLineItemFromShopifyOrderWithoutRefunding = async ({
   orderGid,
-  lineItemGid,
-  quantity,
+  refundLineItems,
   notify = false,
 }: {
   orderGid: string,
-  lineItemGid: string,
+  refundLineItems: { lineItemId: string, quantity: number }[],
   quantity: number,
   notify?: boolean,
 }): Promise<{
   error?: string,
   data?: any,
 }> => removeLineItemFromShopifyOrderWithRefund({
-  orderGid, lineItemGid, quantity, notify,
+  orderGid, refundLineItems, notify, amountsToRefund: [],
 });
+
+/**
+ * @description This is useful for when we want to remove+refund line-item
+ * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ */
+export const queryOrderDataWithPaymentAndFulfillmentStatus = async (orderId: number): Promise<{
+  error?: string,
+  data?: any,
+}> => shopifyGraphqlRequest<{
+  data: {
+    order: {
+      displayFulfillmentStatus: string
+      displayFinancialStatus: string
+      tags: Array<string>
+      id: string
+      originalTotalDutiesSet: any
+      totalReceivedSet: {
+        presentmentMoney: {
+          amount: string
+          currencyCode: string
+        }
+        shopMoney: {
+          amount: string
+          currencyCode: string
+        }
+      }
+      totalShippingPriceSet: {
+        presentmentMoney: {
+          amount: string
+          currencyCode: string
+        }
+        shopMoney: {
+          amount: string
+          currencyCode: string
+        }
+      }
+      totalRefundedSet: {
+        presentmentMoney: {
+          amount: string
+          currencyCode: string
+        }
+        shopMoney: {
+          amount: string
+          currencyCode: string
+        }
+      }
+      transactions: Array<{
+        id: string
+        gateway: string
+        formattedGateway: string
+        parentTransaction: any
+        amountSet: {
+          presentmentMoney: {
+            amount: string
+            currencyCode: string
+          }
+          shopMoney: {
+            amount: string
+            currencyCode: string
+          }
+        }
+        fees: Array<{
+          amount: {
+            amount: string
+            currencyCode: string
+          }
+          flatFee: {
+            amount: string
+            currencyCode: string
+          }
+          flatFeeName: any
+          id: string
+          rate: string
+          rateName: string
+          taxAmount: {
+            amount: string
+            currencyCode: string
+          }
+          type: string
+        }>
+      }>
+      lineItems: {
+        edges: Array<{
+          node: {
+            id: string
+            sku: string
+            title: string
+            refundableQuantity: number
+            originalUnitPriceSet: {
+              presentmentMoney: {
+                amount: string
+                currencyCode: string
+              }
+              shopMoney: {
+                amount: string
+                currencyCode: string
+              }
+            }
+            discountedUnitPriceSet: {
+              presentmentMoney: {
+                amount: string
+                currencyCode: string
+              }
+              shopMoney: {
+                amount: string
+                currencyCode: string
+              }
+            }
+            duties: Array<any>
+          }
+        }>
+      }
+    }
+  }
+  extensions: {
+    cost: {
+      requestedQueryCost: number
+      actualQueryCost: number
+      throttleStatus: {
+        maximumAvailable: number
+        currentlyAvailable: number
+        restoreRate: number
+      }
+    }
+  }
+}>(
+  {
+    query: `{
+      # The ID of the order.
+      order(id: "gid://shopify/Order/${orderId}") {
+        # The total amount of duties after returns, in shop and presentment currencies. Returns 'null' if duties aren't applicable.
+        # currentTotalDutiesSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        displayFulfillmentStatus
+        displayFinancialStatus
+        tags
+        id
+        # currentTotalDutiesSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #   shopMoney {
+        #     amount
+        #     currencyCode
+        #   }
+        # }
+        # discountApplications {
+        #     pageInfo {
+        #         startCursor
+        #         endCursor
+        #     }
+        #     a
+        # }
+        # subtotalPriceSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        # originalTotalPriceSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        originalTotalDutiesSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        # totalDiscountsSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        totalReceivedSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        totalShippingPriceSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        # totalTaxSet {
+        #     presentmentMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        #     shopMoney {
+        #         amount
+        #         currencyCode
+        #     }
+        # }
+        totalRefundedSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
+        transactions (first: 10) {
+            id
+            gateway
+            formattedGateway
+            parentTransaction {
+                id
+            }
+            amountSet {
+                presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+            }
+            fees {
+                amount {
+                    amount
+                    currencyCode
+                }
+                flatFee {
+                    amount
+                    currencyCode
+                }
+                flatFeeName
+                id
+                rate
+                rateName
+                taxAmount {
+                    amount
+                    currencyCode
+                }
+                type
+            }
+        }
+        lineItems(first: 10) {
+          edges {
+            node {
+              id
+              sku
+              title
+              refundableQuantity
+              originalUnitPriceSet {
+                  presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+              }
+              discountedUnitPriceSet {
+                  presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+              }
+              # The duties associated with the line item.
+              duties {
+                id
+                harmonizedSystemCode
+                price {
+                  shopMoney {
+                    amount
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }`,
+    variables: {},
+  },
+  {
+    // eslint-disable-next-line max-len
+    errorReporter: data => (data.data.order.userErrors.length > 0 ? { error: JSON.stringify(data.data.order.userErrors) } : undefined),
+    // @ts-ignore
+    transform: data => data.data?.order,
+  },
+);
 
 // export const addTagsInShopify = async (gid: string, tags: string[]) => backOff(
 //   // eslint-disable-next-line no-return-await

@@ -86,12 +86,23 @@ export declare const closeOrder: (gid: string) => Promise<{
 /**
  * @description This is useful for when we want to remove+refund line-item
  * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ *
+ * If no amountsToRefund specified, this will only remove the item from the
+ * order (and not actually refund anything)!
+ *
+ * Currency must be the presentment_currency in orders where there
+ * is a presentment_currency and a shop_currency; 3-letters, all-caps.
+ *
+ * Any ids, such as lineItemId, should be GID values.
  */
-export declare const removeLineItemFromShopifyOrderWithRefund: ({ orderGid, lineItemGid, quantity, amountToRefund, gateway, kind, notify, }: {
+export declare const removeLineItemFromShopifyOrderWithRefund: ({ orderGid, refundLineItems, gateway, amountsToRefund, currency, kind, notify, }: {
     orderGid: string;
-    lineItemGid: string;
-    quantity: number;
-    amountToRefund?: number | undefined;
+    refundLineItems: {
+        lineItemId: string;
+        quantity: number;
+    }[];
+    amountsToRefund: number[];
+    currency?: string | undefined;
     gateway?: string | undefined;
     kind?: string | undefined;
     notify?: boolean | undefined;
@@ -103,12 +114,23 @@ export declare const removeLineItemFromShopifyOrderWithRefund: ({ orderGid, line
  * @description This is useful for when we want to remove+refund line-item
  * for a Recharge order. Such orders cannot be refunded directly in Shopify.
  */
-export declare const removeLineItemFromShopifyOrderWithoutRefunding: ({ orderGid, lineItemGid, quantity, notify, }: {
+export declare const removeLineItemFromShopifyOrderWithoutRefunding: ({ orderGid, refundLineItems, notify, }: {
     orderGid: string;
-    lineItemGid: string;
+    refundLineItems: {
+        lineItemId: string;
+        quantity: number;
+    }[];
     quantity: number;
     notify?: boolean | undefined;
 }) => Promise<{
+    error?: string;
+    data?: any;
+}>;
+/**
+ * @description This is useful for when we want to remove+refund line-item
+ * for a Recharge order. Such orders cannot be refunded directly in Shopify.
+ */
+export declare const queryOrderDataWithPaymentAndFulfillmentStatus: (orderId: number) => Promise<{
     error?: string;
     data?: any;
 }>;
