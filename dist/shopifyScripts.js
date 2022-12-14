@@ -353,10 +353,7 @@ const removeLineItemFromShopifyOrderWithoutRefunding = ({ orderGid, refundLineIt
     });
 });
 exports.removeLineItemFromShopifyOrderWithoutRefunding = removeLineItemFromShopifyOrderWithoutRefunding;
-/**
- * @description This is useful for when we want to remove+refund line-item
- * for a Recharge order. Such orders cannot be refunded directly in Shopify.
- */
+// @ts-ignore
 const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(void 0, void 0, void 0, function* () {
     return shopifyGraphqlRequest({
         query: `{

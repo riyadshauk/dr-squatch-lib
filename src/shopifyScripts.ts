@@ -448,57 +448,86 @@ export const removeLineItemFromShopifyOrderWithoutRefunding = async ({
   orderGid, refundLineItems, notify, amountsToRefund: [],
 });
 
-/**
- * @description This is useful for when we want to remove+refund line-item
- * for a Recharge order. Such orders cannot be refunded directly in Shopify.
- */
-export const queryOrderDataWithPaymentAndFulfillmentStatus = async (orderId: number): Promise<{
-  error?: string,
-  data?: any,
-}> => shopifyGraphqlRequest<{
-  data: {
-    order: {
-      displayFulfillmentStatus: string
-      displayFinancialStatus: string
-      tags: Array<string>
+// @ts-ignore
+export const queryOrderDataWithPaymentAndFulfillmentStatus: Promise<{
+  displayFulfillmentStatus: string
+  displayFinancialStatus: string
+  tags: Array<string>
+  id: string
+  originalTotalDutiesSet: any
+  totalReceivedSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
+  totalShippingPriceSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
+  totalRefundedSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
+  transactions: Array<{
+    id: string
+    gateway: string
+    formattedGateway: string
+    parentTransaction: any
+    amountSet: {
+      presentmentMoney: {
+        amount: string
+        currencyCode: string
+      }
+      shopMoney: {
+        amount: string
+        currencyCode: string
+      }
+    }
+    fees: Array<{
+      amount: {
+        amount: string
+        currencyCode: string
+      }
+      flatFee: {
+        amount: string
+        currencyCode: string
+      }
+      flatFeeName: any
       id: string
-      originalTotalDutiesSet: any
-      totalReceivedSet: {
-        presentmentMoney: {
-          amount: string
-          currencyCode: string
-        }
-        shopMoney: {
-          amount: string
-          currencyCode: string
-        }
+      rate: string
+      rateName: string
+      taxAmount: {
+        amount: string
+        currencyCode: string
       }
-      totalShippingPriceSet: {
-        presentmentMoney: {
-          amount: string
-          currencyCode: string
-        }
-        shopMoney: {
-          amount: string
-          currencyCode: string
-        }
-      }
-      totalRefundedSet: {
-        presentmentMoney: {
-          amount: string
-          currencyCode: string
-        }
-        shopMoney: {
-          amount: string
-          currencyCode: string
-        }
-      }
-      transactions: Array<{
+      type: string
+    }>
+  }>
+  lineItems: {
+    edges: Array<{
+      node: {
         id: string
-        gateway: string
-        formattedGateway: string
-        parentTransaction: any
-        amountSet: {
+        sku: string
+        title: string
+        refundableQuantity: number
+        originalUnitPriceSet: {
           presentmentMoney: {
             amount: string
             currencyCode: string
@@ -508,71 +537,23 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (orderId: num
             currencyCode: string
           }
         }
-        fees: Array<{
-          amount: {
+        discountedUnitPriceSet: {
+          presentmentMoney: {
             amount: string
             currencyCode: string
           }
-          flatFee: {
+          shopMoney: {
             amount: string
             currencyCode: string
           }
-          flatFeeName: any
-          id: string
-          rate: string
-          rateName: string
-          taxAmount: {
-            amount: string
-            currencyCode: string
-          }
-          type: string
-        }>
-      }>
-      lineItems: {
-        edges: Array<{
-          node: {
-            id: string
-            sku: string
-            title: string
-            refundableQuantity: number
-            originalUnitPriceSet: {
-              presentmentMoney: {
-                amount: string
-                currencyCode: string
-              }
-              shopMoney: {
-                amount: string
-                currencyCode: string
-              }
-            }
-            discountedUnitPriceSet: {
-              presentmentMoney: {
-                amount: string
-                currencyCode: string
-              }
-              shopMoney: {
-                amount: string
-                currencyCode: string
-              }
-            }
-            duties: Array<any>
-          }
-        }>
+        }
+        duties: Array<any>
       }
-    }
+    }>
   }
-  extensions: {
-    cost: {
-      requestedQueryCost: number
-      actualQueryCost: number
-      throttleStatus: {
-        maximumAvailable: number
-        currentlyAvailable: number
-        restoreRate: number
-      }
-    }
-  }
-}>(
+}> = async (
+  orderId: number,
+) => shopifyGraphqlRequest<any>(
   {
     query: `{
       # The ID of the order.
