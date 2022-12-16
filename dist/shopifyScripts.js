@@ -251,17 +251,36 @@ const refundLineItem = (args) => __awaiter(void 0, void 0, void 0, function* () 
     });
 });
 exports.refundLineItem = refundLineItem;
-const cancelOrderREST = (args) => __awaiter(void 0, void 0, void 0, function* () {
-    const resp = yield axios_1.default.post(`${SHOPIFY_REST_URL()}/orders/${args.orderId}/cancel.json`, {
-        email: args.notifyCustomer ? args.notifyCustomer : false,
-    }, {
+const cancelOrderREST = ({ orderId, notifyCustomer = false, amountToRefund = undefined, reason = 'other', currency = 'USD', }) => __awaiter(void 0, void 0, void 0, function* () {
+    console.debug('cancelOrderREST, args:', {
+        orderId,
+        notifyCustomer,
+        amountToRefund,
+        reason,
+        currency,
+    });
+    const buildPayload = () => {
+        const payload = {
+            email: notifyCustomer || false,
+        };
+        if (amountToRefund)
+            payload.amount = amountToRefund;
+        if (reason)
+            payload.reason = reason;
+        if (currency)
+            payload.currency = currency;
+        return payload;
+    };
+    const payload = buildPayload();
+    console.debug('cancelOrderREST, body payload:', payload);
+    const resp = yield axios_1.default.post(`${SHOPIFY_REST_URL()}/orders/${orderId}/cancel.json`, payload, {
         headers: {
             'X-Shopify-Access-Token': SHOPIFY_API_KEY || '',
             'Content-Type': 'application/json',
         },
     });
     if (resp.status !== 200) {
-        throw new Error(`Could not cancel order for order of, orderId: ${args.orderId}`);
+        throw new Error(`Could not cancel order for order of, orderId: ${orderId}`);
     }
 });
 exports.cancelOrderREST = cancelOrderREST;
@@ -302,7 +321,7 @@ exports.closeOrder = closeOrder;
  *
  * Any ids, such as lineItemId, should be GID values.
  */
-const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, refundLineItems, gateway, amountsToRefund, currency = 'USD', kind = 'REFUND', notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
+const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, refundLineItems, gateway, amountsToRefund, parentTransactionId, note = 'Removing line-item', currency = 'USD', kind = 'REFUND', notify = false, }) => __awaiter(void 0, void 0, void 0, function* () {
     return shopifyGraphqlRequest({
         query: `mutation refundCreate($input: RefundInput!) {
       refundCreate(input: $input) {
@@ -322,7 +341,7 @@ const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, refundLineItems, g
     }`,
         variables: {
             input: {
-                note: 'Removing line-item',
+                note,
                 notify,
                 orderId: orderGid,
                 currency,
@@ -332,12 +351,13 @@ const removeLineItemFromShopifyOrderWithRefund = ({ orderGid, refundLineItems, g
                     gateway,
                     kind,
                     orderId: orderGid,
+                    parentId: parentTransactionId,
                 })) : [],
             },
         },
     }, {
         // eslint-disable-next-line max-len
-        errorReporter: data => (data.data.refundCreate.userErrors.length > 0 ? { error: JSON.stringify(data.data.refundCreate.userErrors) } : undefined),
+        errorReporter: data => { var _a, _b, _c, _d, _e; return (((_c = (_b = (_a = data.data) === null || _a === void 0 ? void 0 : _a.refundCreate) === null || _b === void 0 ? void 0 : _b.userErrors) === null || _c === void 0 ? void 0 : _c.length) > 0 ? { error: JSON.stringify((_e = (_d = data.data) === null || _d === void 0 ? void 0 : _d.refundCreate) === null || _e === void 0 ? void 0 : _e.userErrors) } : undefined); },
         // @ts-ignore
         transform: data => { var _a; return (_a = data.data) === null || _a === void 0 ? void 0 : _a.refundCreate; },
     });
@@ -358,58 +378,28 @@ const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(voi
     return shopifyGraphqlRequest({
         query: `{
       order(id: "gid://shopify/Order/${orderId}") {
-        # The total amount of duties after returns, in shop and presentment currencies. Returns 'null' if duties aren't applicable.
-        # currentTotalDutiesSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
         displayFulfillmentStatus
         displayFinancialStatus
+        refundable
+        netPaymentSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
         tags
         id
-        # currentTotalDutiesSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #   shopMoney {
-        #     amount
-        #     currencyCode
-        #   }
-        # }
-        # discountApplications {
-        #     pageInfo {
-        #         startCursor
-        #         endCursor
-        #     }
-        #     a
-        # }
-        # subtotalPriceSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
-        # originalTotalPriceSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
+        name
+        cancelledAt
+        customer {
+            id
+            email
+        }
+        paymentGatewayNames
         originalTotalDutiesSet {
             presentmentMoney {
                 amount
@@ -420,16 +410,6 @@ const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(voi
                 currencyCode
             }
         }
-        # totalDiscountsSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
         totalReceivedSet {
             presentmentMoney {
                 amount
@@ -450,16 +430,6 @@ const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(voi
                 currencyCode
             }
         }
-        # totalTaxSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
         totalRefundedSet {
             presentmentMoney {
                 amount
@@ -472,6 +442,21 @@ const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(voi
         }
         transactions (first: 10) {
             id
+            createdAt
+            amountSet {
+                presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+            }
+            parentTransaction {
+                createdAt
+                id
+            }
             gateway
             formattedGateway
             parentTransaction {
@@ -534,7 +519,6 @@ const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(voi
                     currencyCode
                 }
               }
-              # The duties associated with the line item.
               duties {
                 id
                 harmonizedSystemCode
@@ -552,7 +536,7 @@ const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(voi
         variables: {},
     }, {
         // eslint-disable-next-line max-len
-        errorReporter: data => (data.data.order.userErrors.length > 0 ? { error: JSON.stringify(data.data.order.userErrors) } : undefined),
+        errorReporter: data => { var _a, _b, _c, _d, _e; return (((_c = (_b = (_a = data.data) === null || _a === void 0 ? void 0 : _a.order) === null || _b === void 0 ? void 0 : _b.userErrors) === null || _c === void 0 ? void 0 : _c.length) > 0 ? { error: JSON.stringify((_e = (_d = data.data) === null || _d === void 0 ? void 0 : _d.order) === null || _e === void 0 ? void 0 : _e.userErrors) } : undefined); },
         // @ts-ignore
         transform: data => { var _a; return (_a = data.data) === null || _a === void 0 ? void 0 : _a.order; },
     });

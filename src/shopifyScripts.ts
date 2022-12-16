@@ -303,15 +303,40 @@ export const refundLineItem = async (args: {
   },
 );
 
-export const cancelOrderREST = async (args: {
+export const cancelOrderREST = async ({
+  orderId,
+  notifyCustomer = false,
+  amountToRefund = undefined,
+  reason = 'other',
+  currency = 'USD',
+}: {
   orderId: number,
   notifyCustomer?: boolean,
+  amountToRefund?: string,
+  reason?: string,
+  currency?: string,
 }) => {
+  console.debug('cancelOrderREST, args:', {
+    orderId,
+    notifyCustomer,
+    amountToRefund,
+    reason,
+    currency,
+  });
+  const buildPayload = () => {
+    const payload: { email: boolean, amount?: string, reason?: string, currency?: string } = {
+      email: notifyCustomer || false,
+    };
+    if (amountToRefund) payload.amount = amountToRefund;
+    if (reason) payload.reason = reason;
+    if (currency) payload.currency = currency;
+    return payload;
+  };
+  const payload = buildPayload();
+  console.debug('cancelOrderREST, body payload:', payload);
   const resp = await axios.post(
-    `${SHOPIFY_REST_URL()}/orders/${args.orderId}/cancel.json`,
-    {
-      email: args.notifyCustomer ? args.notifyCustomer : false,
-    },
+    `${SHOPIFY_REST_URL()}/orders/${orderId}/cancel.json`,
+    payload,
     {
       headers: {
         'X-Shopify-Access-Token': SHOPIFY_API_KEY || '',
@@ -320,7 +345,7 @@ export const cancelOrderREST = async (args: {
     },
   );
   if (resp.status !== 200) {
-    throw new Error(`Could not cancel order for order of, orderId: ${args.orderId}`);
+    throw new Error(`Could not cancel order for order of, orderId: ${orderId}`);
   }
 };
 
@@ -372,6 +397,8 @@ export const removeLineItemFromShopifyOrderWithRefund = async ({
   refundLineItems,
   gateway,
   amountsToRefund,
+  parentTransactionId,
+  note = 'Removing line-item',
   currency = 'USD',
   kind = 'REFUND',
   notify = false,
@@ -379,6 +406,8 @@ export const removeLineItemFromShopifyOrderWithRefund = async ({
   orderGid: string,
   refundLineItems: { lineItemId: string, quantity: number }[],
   amountsToRefund: number[],
+  note?: string,
+  parentTransactionId?: string,
   currency?: string,
   gateway?: string,
   kind?: string,
@@ -406,7 +435,7 @@ export const removeLineItemFromShopifyOrderWithRefund = async ({
     }`,
     variables: {
       input: {
-        note: 'Removing line-item',
+        note,
         notify,
         orderId: orderGid,
         currency,
@@ -416,13 +445,14 @@ export const removeLineItemFromShopifyOrderWithRefund = async ({
           gateway,
           kind,
           orderId: orderGid,
+          parentId: parentTransactionId,
         })) : [],
       },
     },
   },
   {
     // eslint-disable-next-line max-len
-    errorReporter: data => (data.data.refundCreate.userErrors.length > 0 ? { error: JSON.stringify(data.data.refundCreate.userErrors) } : undefined),
+    errorReporter: data => (data.data?.refundCreate?.userErrors?.length > 0 ? { error: JSON.stringify(data.data?.refundCreate?.userErrors) } : undefined),
     // @ts-ignore
     transform: data => data.data?.refundCreate,
   },
@@ -455,58 +485,28 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
   {
     query: `{
       order(id: "gid://shopify/Order/${orderId}") {
-        # The total amount of duties after returns, in shop and presentment currencies. Returns 'null' if duties aren't applicable.
-        # currentTotalDutiesSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
         displayFulfillmentStatus
         displayFinancialStatus
+        refundable
+        netPaymentSet {
+            presentmentMoney {
+                amount
+                currencyCode
+            }
+            shopMoney {
+                amount
+                currencyCode
+            }
+        }
         tags
         id
-        # currentTotalDutiesSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #   shopMoney {
-        #     amount
-        #     currencyCode
-        #   }
-        # }
-        # discountApplications {
-        #     pageInfo {
-        #         startCursor
-        #         endCursor
-        #     }
-        #     a
-        # }
-        # subtotalPriceSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
-        # originalTotalPriceSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
+        name
+        cancelledAt
+        customer {
+            id
+            email
+        }
+        paymentGatewayNames
         originalTotalDutiesSet {
             presentmentMoney {
                 amount
@@ -517,16 +517,6 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
                 currencyCode
             }
         }
-        # totalDiscountsSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
         totalReceivedSet {
             presentmentMoney {
                 amount
@@ -547,16 +537,6 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
                 currencyCode
             }
         }
-        # totalTaxSet {
-        #     presentmentMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        #     shopMoney {
-        #         amount
-        #         currencyCode
-        #     }
-        # }
         totalRefundedSet {
             presentmentMoney {
                 amount
@@ -569,6 +549,21 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
         }
         transactions (first: 10) {
             id
+            createdAt
+            amountSet {
+                presentmentMoney {
+                    amount
+                    currencyCode
+                }
+                shopMoney {
+                    amount
+                    currencyCode
+                }
+            }
+            parentTransaction {
+                createdAt
+                id
+            }
             gateway
             formattedGateway
             parentTransaction {
@@ -631,7 +626,6 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
                     currencyCode
                 }
               }
-              # The duties associated with the line item.
               duties {
                 id
                 harmonizedSystemCode
@@ -650,7 +644,7 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
   },
   {
     // eslint-disable-next-line max-len
-    errorReporter: data => (data.data.order.userErrors.length > 0 ? { error: JSON.stringify(data.data.order.userErrors) } : undefined),
+    errorReporter: data => (data.data?.order?.userErrors?.length > 0 ? { error: JSON.stringify(data.data?.order?.userErrors) } : undefined),
     // @ts-ignore
     transform: data => data.data?.order,
   },
@@ -672,9 +666,36 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
 export interface OrderDataWithPaymentAndFulfillmentStatus {
   displayFulfillmentStatus: string
   displayFinancialStatus: string
+  refundable: boolean
+  netPaymentSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
   tags: Array<string>
   id: string
-  originalTotalDutiesSet: any
+  name: string
+  cancelledAt: any
+  customer: {
+    id: string
+    email: string
+  }
+  paymentGatewayNames: Array<string>
+  originalTotalDutiesSet: {
+    presentmentMoney: {
+      amount: string
+      currencyCode: string
+    }
+    shopMoney: {
+      amount: string
+      currencyCode: string
+    }
+  }
   totalReceivedSet: {
     presentmentMoney: {
       amount: string
@@ -707,9 +728,7 @@ export interface OrderDataWithPaymentAndFulfillmentStatus {
   }
   transactions: Array<{
     id: string
-    gateway: string
-    formattedGateway: string
-    parentTransaction: any
+    createdAt: string
     amountSet: {
       presentmentMoney: {
         amount: string
@@ -720,6 +739,12 @@ export interface OrderDataWithPaymentAndFulfillmentStatus {
         currencyCode: string
       }
     }
+    parentTransaction?: {
+      createdAt: string
+      id: string
+    }
+    gateway: string
+    formattedGateway: string
     fees: Array<{
       amount: {
         amount: string
@@ -767,7 +792,15 @@ export interface OrderDataWithPaymentAndFulfillmentStatus {
             currencyCode: string
           }
         }
-        duties: Array<any>
+        duties: Array<{
+          id: string
+          harmonizedSystemCode: string
+          price: {
+            shopMoney: {
+              amount: string
+            }
+          }
+        }>
       }
     }>
   }

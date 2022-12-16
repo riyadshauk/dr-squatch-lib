@@ -75,9 +75,12 @@ export declare const refundLineItem: (args: {
     error?: string;
     data?: any;
 }>;
-export declare const cancelOrderREST: (args: {
+export declare const cancelOrderREST: ({ orderId, notifyCustomer, amountToRefund, reason, currency, }: {
     orderId: number;
-    notifyCustomer?: boolean;
+    notifyCustomer?: boolean | undefined;
+    amountToRefund?: string | undefined;
+    reason?: string | undefined;
+    currency?: string | undefined;
 }) => Promise<void>;
 export declare const closeOrder: (gid: string) => Promise<{
     error?: string;
@@ -95,13 +98,15 @@ export declare const closeOrder: (gid: string) => Promise<{
  *
  * Any ids, such as lineItemId, should be GID values.
  */
-export declare const removeLineItemFromShopifyOrderWithRefund: ({ orderGid, refundLineItems, gateway, amountsToRefund, currency, kind, notify, }: {
+export declare const removeLineItemFromShopifyOrderWithRefund: ({ orderGid, refundLineItems, gateway, amountsToRefund, parentTransactionId, note, currency, kind, notify, }: {
     orderGid: string;
     refundLineItems: {
         lineItemId: string;
         quantity: number;
     }[];
     amountsToRefund: number[];
+    note?: string | undefined;
+    parentTransactionId?: string | undefined;
     currency?: string | undefined;
     gateway?: string | undefined;
     kind?: string | undefined;
@@ -133,9 +138,36 @@ export declare const queryOrderDataWithPaymentAndFulfillmentStatus: (orderId: nu
 export interface OrderDataWithPaymentAndFulfillmentStatus {
     displayFulfillmentStatus: string;
     displayFinancialStatus: string;
+    refundable: boolean;
+    netPaymentSet: {
+        presentmentMoney: {
+            amount: string;
+            currencyCode: string;
+        };
+        shopMoney: {
+            amount: string;
+            currencyCode: string;
+        };
+    };
     tags: Array<string>;
     id: string;
-    originalTotalDutiesSet: any;
+    name: string;
+    cancelledAt: any;
+    customer: {
+        id: string;
+        email: string;
+    };
+    paymentGatewayNames: Array<string>;
+    originalTotalDutiesSet: {
+        presentmentMoney: {
+            amount: string;
+            currencyCode: string;
+        };
+        shopMoney: {
+            amount: string;
+            currencyCode: string;
+        };
+    };
     totalReceivedSet: {
         presentmentMoney: {
             amount: string;
@@ -168,9 +200,7 @@ export interface OrderDataWithPaymentAndFulfillmentStatus {
     };
     transactions: Array<{
         id: string;
-        gateway: string;
-        formattedGateway: string;
-        parentTransaction: any;
+        createdAt: string;
         amountSet: {
             presentmentMoney: {
                 amount: string;
@@ -181,6 +211,12 @@ export interface OrderDataWithPaymentAndFulfillmentStatus {
                 currencyCode: string;
             };
         };
+        parentTransaction?: {
+            createdAt: string;
+            id: string;
+        };
+        gateway: string;
+        formattedGateway: string;
         fees: Array<{
             amount: {
                 amount: string;
@@ -228,7 +264,15 @@ export interface OrderDataWithPaymentAndFulfillmentStatus {
                         currencyCode: string;
                     };
                 };
-                duties: Array<any>;
+                duties: Array<{
+                    id: string;
+                    harmonizedSystemCode: string;
+                    price: {
+                        shopMoney: {
+                            amount: string;
+                        };
+                    };
+                }>;
             };
         }>;
     };
