@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.queryOrderDataWithPaymentAndFulfillmentStatus = exports.removeLineItemFromShopifyOrderWithoutRefunding = exports.removeLineItemFromShopifyOrderWithRefund = exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
+exports.updateOrderPhoneNumber = exports.queryOrderDataWithPaymentAndFulfillmentStatus = exports.removeLineItemFromShopifyOrderWithoutRefunding = exports.removeLineItemFromShopifyOrderWithRefund = exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
 /* eslint-disable import/no-extraneous-dependencies */
 const axios_1 = __importDefault(require("axios"));
 const axios_retry_1 = __importDefault(require("axios-retry"));
@@ -542,3 +542,36 @@ const queryOrderDataWithPaymentAndFulfillmentStatus = (orderId) => __awaiter(voi
     });
 });
 exports.queryOrderDataWithPaymentAndFulfillmentStatus = queryOrderDataWithPaymentAndFulfillmentStatus;
+const updateOrderPhoneNumber = ({ orderId, phoneNumber, }) => __awaiter(void 0, void 0, void 0, function* () {
+    return shopifyGraphqlRequest({
+        query: `mutation orderUpdate($input: OrderInput!) {
+      orderUpdate(input: $input) {
+        order {
+          id
+          shippingAddress {
+              address1
+              phone
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+        variables: {
+            input: {
+                id: `gid://shopify/Order/${orderId}`,
+                shippingAddress: {
+                    phone: phoneNumber,
+                },
+            },
+        },
+    }, {
+        // eslint-disable-next-line max-len
+        errorReporter: data => (data.data.orderUpdate.userErrors.length > 0 ? { error: JSON.stringify(data.data.orderUpdate.userErrors) } : undefined),
+        // @ts-ignore
+        transform: data => { var _a; return (_a = data.data) === null || _a === void 0 ? void 0 : _a.orderUpdate; },
+    });
+});
+exports.updateOrderPhoneNumber = updateOrderPhoneNumber;

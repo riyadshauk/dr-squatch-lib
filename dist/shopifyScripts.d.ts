@@ -125,7 +125,6 @@ export declare const removeLineItemFromShopifyOrderWithoutRefunding: ({ orderGid
         lineItemId: string;
         quantity: number;
     }[];
-    quantity: number;
     notify?: boolean | undefined;
 }) => Promise<{
     error?: string;
@@ -134,6 +133,13 @@ export declare const removeLineItemFromShopifyOrderWithoutRefunding: ({ orderGid
 export declare const queryOrderDataWithPaymentAndFulfillmentStatus: (orderId: number) => Promise<{
     error?: string | undefined;
     data?: OrderDataWithPaymentAndFulfillmentStatus | undefined;
+}>;
+export declare const updateOrderPhoneNumber: ({ orderId, phoneNumber, }: {
+    orderId: number;
+    phoneNumber: null | string;
+}) => Promise<{
+    error?: string;
+    data?: any;
 }>;
 export interface OrderDataWithPaymentAndFulfillmentStatus {
     displayFulfillmentStatus: string;

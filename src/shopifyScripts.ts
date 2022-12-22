@@ -469,7 +469,6 @@ export const removeLineItemFromShopifyOrderWithoutRefunding = async ({
 }: {
   orderGid: string,
   refundLineItems: { lineItemId: string, quantity: number }[],
-  quantity: number,
   notify?: boolean,
 }): Promise<{
   error?: string,
@@ -647,6 +646,50 @@ export const queryOrderDataWithPaymentAndFulfillmentStatus = async (
     errorReporter: data => (data.data?.order?.userErrors?.length > 0 ? { error: JSON.stringify(data.data?.order?.userErrors) } : undefined),
     // @ts-ignore
     transform: data => data.data?.order,
+  },
+);
+
+export const updateOrderPhoneNumber = async ({
+  orderId,
+  phoneNumber,
+}: {
+  orderId: number,
+  phoneNumber: null | string,
+}): Promise<{
+  error?: string,
+  data?: any,
+}> => shopifyGraphqlRequest<any>(
+  {
+    query: `mutation orderUpdate($input: OrderInput!) {
+      orderUpdate(input: $input) {
+        order {
+          id
+          shippingAddress {
+              address1
+              phone
+          }
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }`,
+    variables: {
+      input: {
+        id: `gid://shopify/Order/${orderId}`,
+        shippingAddress: {
+          phone: phoneNumber,
+        },
+      },
+    }
+    ,
+  },
+  {
+    // eslint-disable-next-line max-len
+    errorReporter: data => (data.data.orderUpdate.userErrors.length > 0 ? { error: JSON.stringify(data.data.orderUpdate.userErrors) } : undefined),
+    // @ts-ignore
+    transform: data => data.data?.orderUpdate,
   },
 );
 

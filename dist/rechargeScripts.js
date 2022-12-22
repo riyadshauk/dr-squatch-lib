@@ -204,6 +204,9 @@ const refundRechargeLineItemInternal = ({ chargeId, amount, fullRefund = false, 
     if (status === 429) {
         throw new Error('getShopifyCustomerId, response status === 429 (rate limited)');
     }
+    if (status === 422) {
+        console.error('unprocessable entity (probably already refunded) – skipping for now...', { chargeId, amount });
+    }
     if (status !== 200) {
         throw new Error(`problem creating partial refund for line-item:${JSON.stringify({
             chargeId, amount, fullRefund, retry,
