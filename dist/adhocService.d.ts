@@ -17,6 +17,7 @@ export declare function processAsyncSlidingWindow<T>(f: (arr: T, ee: EventEmitte
 export declare const adHocProcess: (orderIds: any[], processOrder: (orderIdOrObj: number | any, ee?: EventEmitter, doneEvent?: string, jobIdx?: number) => Promise<any>, adhocConfig: {
     delayMs?: number;
     batchRequestFlag?: boolean;
+    batchSize?: number;
     errorsProcessed?: any[];
     asyncWindow: boolean;
     windowSize: number;
@@ -33,6 +34,7 @@ export declare const adhocProcessOfOrderIdsViaCli: (processOrder: (orderIdOrObj:
     orderNumbers: boolean;
     delayMs?: number;
     batchRequestFlag?: boolean;
+    batchSize?: number;
     addFulfillments?: any;
     errors?: any[];
     listWithIds?: boolean;

@@ -138,12 +138,12 @@ export async function processAsyncSlidingWindow<T>(
     completed?: number,
     jobs: Promise<void>[],
   } = {
-    currentIdx: 0,
-    windowSize: 10,
-    errors: [],
-    completed: 0,
-    jobs: [],
-  },
+      currentIdx: 0,
+      windowSize: 10,
+      errors: [],
+      completed: 0,
+      jobs: [],
+    },
 ) {
   // initial kick off of sliding window, event-based loop
   if (state.jobs.length < state.windowSize) {
@@ -197,10 +197,11 @@ processAsyncEventEmitter.addListener('doneEvent', (
 export const adHocProcess = async (
   orderIds: any[],
   // eslint-disable-next-line no-unused-vars
-  processOrder: (orderIdOrObj: number|any, ee?: EventEmitter, doneEvent?: string, jobIdx?: number) => Promise<any>,
+  processOrder: (orderIdOrObj: number | any, ee?: EventEmitter, doneEvent?: string, jobIdx?: number) => Promise<any>,
   adhocConfig: {
     delayMs?: number,
     batchRequestFlag?: boolean,
+    batchSize?: number,
     errorsProcessed?: any[],
     asyncWindow: boolean,
     windowSize: number,
@@ -210,6 +211,7 @@ export const adHocProcess = async (
   const {
     delayMs,
     batchRequestFlag,
+    batchSize,
     errorsProcessed = [],
     asyncWindow = false,
     windowSize,
@@ -226,7 +228,7 @@ export const adHocProcess = async (
       error = (await batchRequest(
         orderIdsToAttempt,
         processOrder,
-        { batchSize: 10, delay: 1000 },
+        { batchSize: batchSize || 10, delay: 1000 },
       )).error;
       if (error.length !== 0) {
         console.debug('error:', JSON.stringify(error));
@@ -336,15 +338,15 @@ const chunkArray = (arr: any[], chunkSize: number) => {
  * @param orderInfo is usually just orderId: number, but for addFulfillments, passed in an object
  */
 // eslint-disable-next-line no-unused-vars
-export const adhocProcessOfOrderIdsViaCli = async (processOrder: (orderIdOrObj: number|any, ee?: EventEmitter, doneEvent?: string, jobIdx?: number) => Promise<any>, cliConfig: { orderNumbers: boolean, delayMs?: number, batchRequestFlag?: boolean, addFulfillments?: any, errors?: any[], listWithIds?: boolean, logs?: any[], asyncWindow?: boolean, windowSize?: number, } = {
-  orderNumbers: false, delayMs: 50, batchRequestFlag: false, errors: [], listWithIds: false, logs: [], asyncWindow: false, windowSize: 10,
+export const adhocProcessOfOrderIdsViaCli = async (processOrder: (orderIdOrObj: number | any, ee?: EventEmitter, doneEvent?: string, jobIdx?: number) => Promise<any>, cliConfig: { orderNumbers: boolean, delayMs?: number, batchRequestFlag?: boolean, batchSize?: number, addFulfillments?: any, errors?: any[], listWithIds?: boolean, logs?: any[], asyncWindow?: boolean, windowSize?: number, } = {
+  orderNumbers: false, delayMs: 50, batchRequestFlag: false, batchSize: 10, errors: [], listWithIds: false, logs: [], asyncWindow: false, windowSize: 10,
 }) => {
   if (ENV_FILENAME === undefined) {
     throw new Error('ENV_FILENAME is undefined. Please export ENV_FILENAME=.env.{storeHandle} when running the script via CLI');
   }
   try {
     const {
-      orderNumbers: orderNumbersPassedInInsteadOfOrderIds, delayMs, batchRequestFlag, addFulfillments, listWithIds, logs, errors, asyncWindow, windowSize,
+      orderNumbers: orderNumbersPassedInInsteadOfOrderIds, delayMs, batchRequestFlag, batchSize, addFulfillments, listWithIds, logs, errors, asyncWindow, windowSize,
     } = cliConfig;
     const args = process.argv;
     const orderIdsFileName = args[2];
@@ -400,7 +402,7 @@ export const adhocProcessOfOrderIdsViaCli = async (processOrder: (orderIdOrObj: 
     }
     const isSuccess = await adHocProcess(orderIds, processOrder, {
       // @ts-ignore
-      delayMs, batchRequestFlag, asyncWindow, windowSize, errorsProcessed: errors, errors,
+      delayMs, batchRequestFlag, batchSize, asyncWindow, windowSize, errorsProcessed: errors, errors,
     });
     console.log(`${Array.isArray(isSuccess) ? 'errors' : 'isSuccess'}:`, JSON.stringify(isSuccess));
     console.log('logs:', JSON.stringify(logs));

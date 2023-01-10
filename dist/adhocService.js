@@ -181,7 +181,7 @@ f, tasks, state, jobIdx) => {
 const adHocProcess = (orderIds, 
 // eslint-disable-next-line no-unused-vars
 processOrder, adhocConfig) => __awaiter(void 0, void 0, void 0, function* () {
-    const { delayMs, batchRequestFlag, errorsProcessed = [], asyncWindow = false, windowSize, errors = [], } = adhocConfig;
+    const { delayMs, batchRequestFlag, batchSize, errorsProcessed = [], asyncWindow = false, windowSize, errors = [], } = adhocConfig;
     const totalRows = orderIds.length;
     let count = 0;
     if (batchRequestFlag) {
@@ -190,7 +190,7 @@ processOrder, adhocConfig) => __awaiter(void 0, void 0, void 0, function* () {
         let orderIdsToAttempt = [...orderIds];
         do {
             // eslint-disable-next-line no-await-in-loop
-            error = (yield (0, batch_request_js_1.default)(orderIdsToAttempt, processOrder, { batchSize: 10, delay: 1000 })).error;
+            error = (yield (0, batch_request_js_1.default)(orderIdsToAttempt, processOrder, { batchSize: batchSize || 10, delay: 1000 })).error;
             if (error.length !== 0) {
                 console.debug('error:', JSON.stringify(error));
                 // orderIdsToAttempt = error.map(({ record }) => record);
@@ -300,13 +300,13 @@ const chunkArray = (arr, chunkSize) => {
  */
 // eslint-disable-next-line no-unused-vars
 const adhocProcessOfOrderIdsViaCli = (processOrder, cliConfig = {
-    orderNumbers: false, delayMs: 50, batchRequestFlag: false, errors: [], listWithIds: false, logs: [], asyncWindow: false, windowSize: 10,
+    orderNumbers: false, delayMs: 50, batchRequestFlag: false, batchSize: 10, errors: [], listWithIds: false, logs: [], asyncWindow: false, windowSize: 10,
 }) => __awaiter(void 0, void 0, void 0, function* () {
     if (ENV_FILENAME === undefined) {
         throw new Error('ENV_FILENAME is undefined. Please export ENV_FILENAME=.env.{storeHandle} when running the script via CLI');
     }
     try {
-        const { orderNumbers: orderNumbersPassedInInsteadOfOrderIds, delayMs, batchRequestFlag, addFulfillments, listWithIds, logs, errors, asyncWindow, windowSize, } = cliConfig;
+        const { orderNumbers: orderNumbersPassedInInsteadOfOrderIds, delayMs, batchRequestFlag, batchSize, addFulfillments, listWithIds, logs, errors, asyncWindow, windowSize, } = cliConfig;
         const args = process_1.default.argv;
         const orderIdsFileName = args[2];
         let orderIds = [];
@@ -360,7 +360,7 @@ const adhocProcessOfOrderIdsViaCli = (processOrder, cliConfig = {
         }
         const isSuccess = yield (0, exports.adHocProcess)(orderIds, processOrder, {
             // @ts-ignore
-            delayMs, batchRequestFlag, asyncWindow, windowSize, errorsProcessed: errors, errors,
+            delayMs, batchRequestFlag, batchSize, asyncWindow, windowSize, errorsProcessed: errors, errors,
         });
         console.log(`${Array.isArray(isSuccess) ? 'errors' : 'isSuccess'}:`, JSON.stringify(isSuccess));
         console.log('logs:', JSON.stringify(logs));
