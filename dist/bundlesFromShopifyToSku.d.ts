@@ -24,7 +24,7 @@ export interface BundleBreakdown {
 export interface BundlesBreakdown {
     [key: string]: BundleBreakdown;
 }
-export declare type ProductCategory = 'barsoap' | 'deodorant' | 'hair-care' | 'onetimes' | 'toothpaste' | 'shower-boosters' | 'shampoo' | 'conditioner' | 'colognes';
+export type ProductCategory = 'barsoap' | 'deodorant' | 'hair-care' | 'onetimes' | 'toothpaste' | 'shower-boosters' | 'shampoo' | 'conditioner' | 'colognes';
 export declare const productCategories: ProductCategory[];
 export declare class GenerateBundleBreakdown {
     #private;

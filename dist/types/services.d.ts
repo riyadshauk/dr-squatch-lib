@@ -1,5 +1,5 @@
-export declare type SourceType = 'rechargeCharge' | 'rechargeOrder' | 'shopifyOrder' | 'narvarPayload' | 'shopifyFeeds' | 'unknown';
-export declare type EngineeringEventName = 'processing_begin' | 'processing_complete' | 'critical_error';
+export type SourceType = 'rechargeCharge' | 'rechargeOrder' | 'shopifyOrder' | 'narvarPayload' | 'shopifyFeeds' | 'unknown';
+export type EngineeringEventName = 'processing_begin' | 'processing_complete' | 'critical_error';
 export interface EngineeringEvent {
     /**
      * @description Shouuld be a unique ID for the object being processed, eg, chargeId, orderId, etc

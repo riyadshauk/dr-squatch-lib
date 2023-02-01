@@ -1,5 +1,7 @@
 import axios from 'axios';
-import { Property, RechargeCustomer, SubscriptionsResponse } from './types/recharge';
+import {
+  OneTime, Property, RechargeCustomer, SubscriptionsResponse,
+} from './types/recharge';
 import { exponentialBackoff, keyRotater } from './utils';
 
 const {
@@ -48,6 +50,29 @@ export const addRechargeOneTime = async (opts: {
   addressId: number,
   variantId: number,
 }): Promise<{ status: number, id: number }> => exponentialBackoff(addRechargeOneTimeInternal, [opts], { funcName: 'addRechargeOneTime' });
+
+const listRechargeOneTimeInternal = async ({
+  addressId,
+}: {
+  addressId: number,
+}): Promise<{ onetimes: OneTime[] }> => {
+  const { status, data: { onetimes } } = await axios({
+    method: 'get',
+    url: `${RECHARGE_API_BASE_URL}/onetimes?${addressId}`,
+    headers: {
+      'X-Recharge-Version': '2021-11',
+      'X-Recharge-Access-Token': keyRotater(rechargeApiKeys, addressId),
+    },
+  });
+  if (status === 429) {
+    throw new Error('listRechargeOneTime, response status === 429 (rate limited)');
+  }
+  return { onetimes };
+};
+
+export const listRechargeOneTime = async (opts: {
+  addressId: number,
+}): Promise<{ onetimes: OneTime[] }> => exponentialBackoff(listRechargeOneTimeInternal, [opts], { funcName: 'listRechargeOneTime' });
 
 const removeRechargeOneTimeInternal = async ({
   onetimeId,

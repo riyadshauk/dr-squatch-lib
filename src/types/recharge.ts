@@ -285,3 +285,23 @@ export interface RechargeTaxLine {
   title: string;
   unit_price?: string;
 }
+
+export interface OneTime {
+  id: number;
+  address_id: number;
+  customer_id: number;
+  created_at: Date;
+  external_product_id: ExternalTID;
+  external_variant_id: ExternalTID;
+  is_cancelled: boolean;
+  next_charge_scheduled_at: Date;
+  presentment_currency: string;
+  price: string;
+  product_title: string;
+  properties: Property[];
+  quantity: number;
+  sku: null;
+  sku_override: boolean;
+  updated_at: Date;
+  variant_title: string;
+}

@@ -1,5 +1,5 @@
 import { ShopifyOrderObject } from './types/shopify';
-export declare type OnlyOneProperty<Union extends string, Value> = {
+export type OnlyOneProperty<Union extends string, Value> = {
     [Key in Union]: Record<Key, Value> & {
         [K in Exclude<Union, Key>]?: never;
     };

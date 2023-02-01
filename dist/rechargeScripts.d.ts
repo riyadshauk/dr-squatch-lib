@@ -1,10 +1,15 @@
-import { Property, SubscriptionsResponse } from './types/recharge';
+import { OneTime, Property, SubscriptionsResponse } from './types/recharge';
 export declare const addRechargeOneTime: (opts: {
     addressId: number;
     variantId: number;
 }) => Promise<{
     status: number;
     id: number;
+}>;
+export declare const listRechargeOneTime: (opts: {
+    addressId: number;
+}) => Promise<{
+    onetimes: OneTime[];
 }>;
 export declare const removeRechargeOneTime: (opts: {
     onetimeId: number;
