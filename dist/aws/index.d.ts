@@ -1,2 +1,2 @@
-export { dynamodb, DeleteItemCommand, GetItemCommand, PutItemCommand, } from './dynamodb';
-export { sqs } from './sqs';
+export * from './dynamodb';
+export * from './sqs';

@@ -1,10 +1,18 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __exportStar = (this && this.__exportStar) || function(m, exports) {
+    for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sqs = exports.PutItemCommand = exports.GetItemCommand = exports.DeleteItemCommand = exports.dynamodb = void 0;
-var dynamodb_1 = require("./dynamodb");
-Object.defineProperty(exports, "dynamodb", { enumerable: true, get: function () { return dynamodb_1.dynamodb; } });
-Object.defineProperty(exports, "DeleteItemCommand", { enumerable: true, get: function () { return dynamodb_1.DeleteItemCommand; } });
-Object.defineProperty(exports, "GetItemCommand", { enumerable: true, get: function () { return dynamodb_1.GetItemCommand; } });
-Object.defineProperty(exports, "PutItemCommand", { enumerable: true, get: function () { return dynamodb_1.PutItemCommand; } });
-var sqs_1 = require("./sqs");
-Object.defineProperty(exports, "sqs", { enumerable: true, get: function () { return sqs_1.sqs; } });
+__exportStar(require("./dynamodb"), exports);
+__exportStar(require("./sqs"), exports);
