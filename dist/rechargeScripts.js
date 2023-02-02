@@ -42,10 +42,13 @@ const addRechargeOneTimeInternal = ({ addressId, variantId, price = '0.00', quan
 });
 const addRechargeOneTime = (opts) => __awaiter(void 0, void 0, void 0, function* () { return (0, utils_1.exponentialBackoff)(addRechargeOneTimeInternal, [opts], { funcName: 'addRechargeOneTime' }); });
 exports.addRechargeOneTime = addRechargeOneTime;
-const listRechargeOneTimesInternal = ({ addressId, }) => __awaiter(void 0, void 0, void 0, function* () {
+const listRechargeOneTimesInternal = ({ addressId, chargeId, }) => __awaiter(void 0, void 0, void 0, function* () {
+    if (!addressId && !chargeId) {
+        throw new Error('Must provide at least (and exactly) one of: addressId, chargeId to listRechargeOneTimes!');
+    }
     const { status, data: { onetimes } } = yield (0, axios_1.default)({
         method: 'get',
-        url: `${RECHARGE_API_BASE_URL}/onetimes?address_id=${addressId}`,
+        url: `${RECHARGE_API_BASE_URL}/onetimes?${addressId || chargeId}`,
         headers: {
             'X-Recharge-Version': '2021-11',
             'X-Recharge-Access-Token': (0, utils_1.keyRotater)(rechargeApiKeys, addressId),

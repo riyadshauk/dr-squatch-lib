@@ -53,12 +53,17 @@ export const addRechargeOneTime = async (opts: {
 
 const listRechargeOneTimesInternal = async ({
   addressId,
+  chargeId,
 }: {
-  addressId: number,
+  addressId?: number,
+  chargeId?: number,
 }): Promise<{ onetimes: OneTime[] }> => {
+  if (!addressId && !chargeId) {
+    throw new Error('Must provide at least (and exactly) one of: addressId, chargeId to listRechargeOneTimes!');
+  }
   const { status, data: { onetimes } } = await axios({
     method: 'get',
-    url: `${RECHARGE_API_BASE_URL}/onetimes?address_id=${addressId}`,
+    url: `${RECHARGE_API_BASE_URL}/onetimes?${addressId || chargeId}`,
     headers: {
       'X-Recharge-Version': '2021-11',
       'X-Recharge-Access-Token': keyRotater(rechargeApiKeys, addressId),
@@ -71,7 +76,8 @@ const listRechargeOneTimesInternal = async ({
 };
 
 export const listRechargeOneTimes = async (opts: {
-  addressId: number,
+  addressId?: number,
+  chargeId?: number,
 }): Promise<{ onetimes: OneTime[] }> => exponentialBackoff(listRechargeOneTimesInternal, [opts], { funcName: 'listRechargeOneTime' });
 
 const removeRechargeOneTimeInternal = async ({

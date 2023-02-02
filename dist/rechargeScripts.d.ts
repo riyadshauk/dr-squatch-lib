@@ -7,7 +7,8 @@ export declare const addRechargeOneTime: (opts: {
     id: number;
 }>;
 export declare const listRechargeOneTimes: (opts: {
-    addressId: number;
+    addressId?: number;
+    chargeId?: number;
 }) => Promise<{
     onetimes: OneTime[];
 }>;
