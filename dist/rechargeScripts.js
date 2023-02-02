@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refundRechargeLineItem = exports.getCharges = exports.updateSubscription = exports.refundRechargeCharge = exports.getSubscriptions = exports.deleteSubscription = exports.getShopifyCustomerId = exports.removeRechargeOneTime = exports.listRechargeOneTime = exports.addRechargeOneTime = void 0;
+exports.refundRechargeLineItem = exports.getCharges = exports.updateSubscription = exports.refundRechargeCharge = exports.getSubscriptions = exports.deleteSubscription = exports.getShopifyCustomerId = exports.removeRechargeOneTime = exports.listRechargeOneTimes = exports.addRechargeOneTime = void 0;
 const axios_1 = __importDefault(require("axios"));
 const utils_1 = require("./utils");
 const { RECHARGE_API_KEYS, RECHARGE_API_BASE_URL, } = process.env;
@@ -42,7 +42,7 @@ const addRechargeOneTimeInternal = ({ addressId, variantId, price = '0.00', quan
 });
 const addRechargeOneTime = (opts) => __awaiter(void 0, void 0, void 0, function* () { return (0, utils_1.exponentialBackoff)(addRechargeOneTimeInternal, [opts], { funcName: 'addRechargeOneTime' }); });
 exports.addRechargeOneTime = addRechargeOneTime;
-const listRechargeOneTimeInternal = ({ addressId, }) => __awaiter(void 0, void 0, void 0, function* () {
+const listRechargeOneTimesInternal = ({ addressId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const { status, data: { onetimes } } = yield (0, axios_1.default)({
         method: 'get',
         url: `${RECHARGE_API_BASE_URL}/onetimes?${addressId}`,
@@ -56,8 +56,8 @@ const listRechargeOneTimeInternal = ({ addressId, }) => __awaiter(void 0, void 0
     }
     return { onetimes };
 });
-const listRechargeOneTime = (opts) => __awaiter(void 0, void 0, void 0, function* () { return (0, utils_1.exponentialBackoff)(listRechargeOneTimeInternal, [opts], { funcName: 'listRechargeOneTime' }); });
-exports.listRechargeOneTime = listRechargeOneTime;
+const listRechargeOneTimes = (opts) => __awaiter(void 0, void 0, void 0, function* () { return (0, utils_1.exponentialBackoff)(listRechargeOneTimesInternal, [opts], { funcName: 'listRechargeOneTime' }); });
+exports.listRechargeOneTimes = listRechargeOneTimes;
 const removeRechargeOneTimeInternal = ({ onetimeId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const { status } = yield (0, axios_1.default)({
         method: 'delete',

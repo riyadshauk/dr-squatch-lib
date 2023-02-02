@@ -6,7 +6,7 @@ export declare const addRechargeOneTime: (opts: {
     status: number;
     id: number;
 }>;
-export declare const listRechargeOneTime: (opts: {
+export declare const listRechargeOneTimes: (opts: {
     addressId: number;
 }) => Promise<{
     onetimes: OneTime[];

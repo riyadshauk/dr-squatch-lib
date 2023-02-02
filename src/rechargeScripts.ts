@@ -51,7 +51,7 @@ export const addRechargeOneTime = async (opts: {
   variantId: number,
 }): Promise<{ status: number, id: number }> => exponentialBackoff(addRechargeOneTimeInternal, [opts], { funcName: 'addRechargeOneTime' });
 
-const listRechargeOneTimeInternal = async ({
+const listRechargeOneTimesInternal = async ({
   addressId,
 }: {
   addressId: number,
@@ -70,9 +70,9 @@ const listRechargeOneTimeInternal = async ({
   return { onetimes };
 };
 
-export const listRechargeOneTime = async (opts: {
+export const listRechargeOneTimes = async (opts: {
   addressId: number,
-}): Promise<{ onetimes: OneTime[] }> => exponentialBackoff(listRechargeOneTimeInternal, [opts], { funcName: 'listRechargeOneTime' });
+}): Promise<{ onetimes: OneTime[] }> => exponentialBackoff(listRechargeOneTimesInternal, [opts], { funcName: 'listRechargeOneTime' });
 
 const removeRechargeOneTimeInternal = async ({
   onetimeId,
