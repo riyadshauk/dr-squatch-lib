@@ -45,7 +45,7 @@ exports.addRechargeOneTime = addRechargeOneTime;
 const listRechargeOneTimesInternal = ({ addressId, }) => __awaiter(void 0, void 0, void 0, function* () {
     const { status, data: { onetimes } } = yield (0, axios_1.default)({
         method: 'get',
-        url: `${RECHARGE_API_BASE_URL}/onetimes?${addressId}`,
+        url: `${RECHARGE_API_BASE_URL}/onetimes?address_id=${addressId}`,
         headers: {
             'X-Recharge-Version': '2021-11',
             'X-Recharge-Access-Token': (0, utils_1.keyRotater)(rechargeApiKeys, addressId),

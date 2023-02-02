@@ -58,7 +58,7 @@ const listRechargeOneTimesInternal = async ({
 }): Promise<{ onetimes: OneTime[] }> => {
   const { status, data: { onetimes } } = await axios({
     method: 'get',
-    url: `${RECHARGE_API_BASE_URL}/onetimes?${addressId}`,
+    url: `${RECHARGE_API_BASE_URL}/onetimes?address_id=${addressId}`,
     headers: {
       'X-Recharge-Version': '2021-11',
       'X-Recharge-Access-Token': keyRotater(rechargeApiKeys, addressId),
