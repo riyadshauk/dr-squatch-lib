@@ -1,5 +1,9 @@
 export type SourceType = 'rechargeCharge' | 'rechargeOrder' | 'shopifyOrder' | 'narvarPayload' | 'shopifyFeeds' | 'unknown';
-export type EngineeringEventName = 'processing_begin' | 'processing_complete' | 'critical_error';
+/**
+ * @description 'critical_error' is meant to get forwarded to e.g. Slack channel
+ * for immediate/live-streamed notifications
+ */
+export type EngineeringEventName = 'processing_begin' | 'processing_complete' | 'critical_error' | 'non-critical_error';
 export interface EngineeringEvent {
     /**
      * @description Shouuld be a unique ID for the object being processed, eg, chargeId, orderId, etc
