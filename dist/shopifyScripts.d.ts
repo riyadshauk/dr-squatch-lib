@@ -141,6 +141,26 @@ export declare const updateOrderPhoneNumber: ({ orderId, phoneNumber, }: {
     error?: string;
     data?: any;
 }>;
+export declare const getLineItems: ({ orderId, }: {
+    orderId: number;
+}) => Promise<{
+    error?: string;
+    data?: {
+        id: string;
+        lineItems: {
+            edges: {
+                node: {
+                    id: string;
+                    sku: string;
+                    customAttributes: {
+                        key: string;
+                        value: any;
+                    }[];
+                };
+            }[];
+        };
+    };
+}>;
 export interface OrderDataWithPaymentAndFulfillmentStatus {
     displayFulfillmentStatus: string;
     displayFinancialStatus: string;

@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateOrderPhoneNumber = exports.queryOrderDataWithPaymentAndFulfillmentStatus = exports.removeLineItemFromShopifyOrderWithoutRefunding = exports.removeLineItemFromShopifyOrderWithRefund = exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
+exports.getLineItems = exports.updateOrderPhoneNumber = exports.queryOrderDataWithPaymentAndFulfillmentStatus = exports.removeLineItemFromShopifyOrderWithoutRefunding = exports.removeLineItemFromShopifyOrderWithRefund = exports.closeOrder = exports.cancelOrderREST = exports.refundLineItem = exports.removeTagsInShopify = exports.addTagsInShopify = exports.getChannelInfo = exports.getTagsFromShopifyCustomer = exports.getTagsFromShopifyOrder = exports.getFulfillmentAndTagsFromShopify = exports.shopifyGraphqlRequest = exports.getShopifyOrder = void 0;
 /* eslint-disable import/no-extraneous-dependencies */
 const axios_1 = __importDefault(require("axios"));
 const axios_retry_1 = __importDefault(require("axios-retry"));
@@ -575,3 +575,31 @@ const updateOrderPhoneNumber = ({ orderId, phoneNumber, }) => __awaiter(void 0, 
     });
 });
 exports.updateOrderPhoneNumber = updateOrderPhoneNumber;
+const getLineItems = ({ orderId, }) => __awaiter(void 0, void 0, void 0, function* () {
+    return shopifyGraphqlRequest({
+        query: `{
+      order(id: "gid://shopify/Order/${orderId}") {
+          # Order fields
+          id
+          lineItems (first: 10) {
+              edges {
+                  node {
+                      id
+                      sku
+                      customAttributes {
+                          key
+                          value
+                      }
+                  }
+              }
+          }
+        }
+      }`,
+    }, {
+        // eslint-disable-next-line max-len
+        errorReporter: data => { var _a, _b, _c, _d, _e; return (((_c = (_b = (_a = data.data) === null || _a === void 0 ? void 0 : _a.order) === null || _b === void 0 ? void 0 : _b.userErrors) === null || _c === void 0 ? void 0 : _c.length) > 0 ? { error: JSON.stringify((_e = (_d = data.data) === null || _d === void 0 ? void 0 : _d.order) === null || _e === void 0 ? void 0 : _e.userErrors) } : undefined); },
+        // @ts-ignore
+        transform: data => { var _a; return (_a = data.data) === null || _a === void 0 ? void 0 : _a.order; },
+    });
+});
+exports.getLineItems = getLineItems;

@@ -693,6 +693,48 @@ export const updateOrderPhoneNumber = async ({
   },
 );
 
+export const getLineItems = async ({
+  orderId,
+}: {
+  orderId: number,
+}): Promise<{
+  error?: string,
+  data?: {
+    id: string, lineItems: {
+      edges: {
+        node: { id: string, sku: string, customAttributes: { key: string, value: any }[] }
+      }[]
+    }
+  },
+}> => shopifyGraphqlRequest<any>(
+  {
+    query: `{
+      order(id: "gid://shopify/Order/${orderId}") {
+          # Order fields
+          id
+          lineItems (first: 10) {
+              edges {
+                  node {
+                      id
+                      sku
+                      customAttributes {
+                          key
+                          value
+                      }
+                  }
+              }
+          }
+        }
+      }`,
+  },
+  {
+    // eslint-disable-next-line max-len
+    errorReporter: data => (data.data?.order?.userErrors?.length > 0 ? { error: JSON.stringify(data.data?.order?.userErrors) } : undefined),
+    // @ts-ignore
+    transform: data => data.data?.order,
+  },
+);
+
 // export const addTagsInShopify = async (gid: string, tags: string[]) => backOff(
 //   // eslint-disable-next-line no-return-await
 //   async () => await addTagWithoutRetry(gid, tags),
