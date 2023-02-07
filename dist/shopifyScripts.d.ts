@@ -147,6 +147,9 @@ export declare const getLineItems: ({ orderId, }: {
     error?: string;
     data?: {
         id: string;
+        customer: {
+            id: string;
+        };
         lineItems: {
             edges: {
                 node: {

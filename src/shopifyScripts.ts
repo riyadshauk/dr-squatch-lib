@@ -700,9 +700,15 @@ export const getLineItems = async ({
 }): Promise<{
   error?: string,
   data?: {
-    id: string, lineItems: {
+    id: string,
+    customer: { id: string },
+    lineItems: {
       edges: {
-        node: { id: string, sku: string, customAttributes: { key: string, value: any }[] }
+        node: {
+          id: string,
+          sku: string,
+          customAttributes: { key: string, value: any }[]
+        }
       }[]
     }
   },
@@ -710,8 +716,10 @@ export const getLineItems = async ({
   {
     query: `{
       order(id: "gid://shopify/Order/${orderId}") {
-          # Order fields
           id
+          customer {
+              id
+          }
           lineItems (first: 10) {
               edges {
                   node {

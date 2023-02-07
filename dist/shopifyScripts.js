@@ -579,8 +579,10 @@ const getLineItems = ({ orderId, }) => __awaiter(void 0, void 0, void 0, functio
     return shopifyGraphqlRequest({
         query: `{
       order(id: "gid://shopify/Order/${orderId}") {
-          # Order fields
           id
+          customer {
+              id
+          }
           lineItems (first: 10) {
               edges {
                   node {
