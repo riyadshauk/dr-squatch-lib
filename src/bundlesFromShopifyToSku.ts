@@ -131,7 +131,7 @@ export class GenerateBundleBreakdown {
     }
     // console.debug('bundleBreakdownForVariant:', bundleBreakdownForVariant);
     const products: Product[] = [];
-    [...productCategories, variantTitle].forEach((category) => {
+    [...productCategories, variantTitle, 'Default Title'].forEach((category) => {
       // @ts-ignore
       const handleCounts = (bundleBreakdownForVariant || {})[category] || bundleBreakdown[category]; // this falsey check is in case a bogus bundle is passed in
       if (typeof handleCounts !== 'object' || handleCounts === null) {
